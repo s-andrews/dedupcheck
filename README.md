@@ -27,4 +27,4 @@ A 4 column tab delimited text file
 2. File path 1
 3. File path 2
 4. File size (bytes)
-3. 
+
