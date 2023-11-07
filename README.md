@@ -28,3 +28,25 @@ A 4 column tab delimited text file
 3. File path 2
 4. File size (bytes)
 
+
+Testing
+-------
+
+Go into the ```testdata``` folder and run the ```make_test_data.sh``` script to generate a suitable test dataset.
+
+From the main install directory run:
+
+```
+./dedupcheck testdata/
+```
+
+You should see:
+
+```
+Duplicates      testdata/file1  testdata/dup1   209715200
+Duplicates      testdata/subdir/dup2    testdata/file2  209715200
+```
+
+The file ```notdup1``` shouldn't be reported as it differs at the end but not the start
+The file ```notdup2``` shouldn't be reported as it is a hard link to the original file and not a duplicate
+
