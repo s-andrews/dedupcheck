@@ -39,7 +39,10 @@ def main():
                 digest = xx.digest()
 
                 if (digest,size) in signatures:
-                    print("Duplicates",file,signatures[(digest,size)],size, sep="\t")
+                    # These could just be hard links to each other, so check if they
+                    # point to the same inode
+                    if file.stat().st_ino != Path(signatures[(digest,size)]).stat().st_ino:
+                        print("Duplicates",file,signatures[(digest,size)],size, sep="\t")
                 else:
                     signatures[(digest,size)] = str(file)
 
