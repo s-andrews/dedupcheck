@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+from pathlib import Path
+import xxhash
+import sys
+
+starting_points = sys.argv[1:]
+min_file_size = 100 * 1024 * 1024
+
+def main():
+
+    signatures = {}
+
+    xx = xxhash.xxh64()
+
+    for starting_point in starting_points:
+        for file in Path(starting_point).rglob("*"):
+            if file.is_dir():
+                continue
+
+            if file.is_symlink():
+                continue
+
+            size = file.stat().st_size
+            if  size < min_file_size:
+                continue
+
+            with open(file,"rb") as infh:
+                # We read 100kb from the front
+                front = infh.read(100*1024)
+
+                # We read 100kb from the back
+                infh.seek(-(100*1024),2)
+                back = infh.read(100*1024)
+
+                # Calculate the hash
+                xx.reset()
+                xx.update(front)
+                xx.update(back)
+                digest = xx.digest()
+
+                if (digest,size) in signatures:
+                    print("Duplicates",file,signatures[(digest,size)],size, sep="\t")
+                else:
+                    signatures[(digest,size)] = str(file)
+
+
+if __name__ == "__main__":
+    main()
