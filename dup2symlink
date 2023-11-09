@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+import argparse
+from pathlib import Path
+import os
+
+VERSION = "0.1"
+
+# This script takes in an output file from dedupcheck and replaces one of
+# the files with a symlink to the other one.
+# 
+# You should **NOT** run this as a matter of course - use it for filtered
+# and validated subsets of the full dataset only.
+
+def main():
+    global options
+    options = getOptions()
+
+    with open(options.dedupfile) as infh:
+        infh.readline() # discard header
+
+        for line in infh:
+            sections = line.strip().split(",")
+            file1 = sections[2]
+            file2 = sections[3]
+
+            if options.prefer2:
+                # we swap the two files around so we keep the second one
+                file1 = sections[3]
+                file2 = sections[2]
+
+            replace_file(file1,file2)
+
+def replace_file(file1,file2):
+
+    # We're replacing file1 with a symlink to file2
+
+    # Check that file1 and file2 actually exist and that
+    # neither of them is a symlink already
+
+    path1 = Path(file1)
+    path2 = Path(file2)
+
+    if not (path1.is_file() and path2.is_file()) :
+        print("Both files were not actually files",path1,path2)
+        return()
+
+    if path1.is_symlink() or path2.is_symlink():
+        print("One of the files was already a symlink")
+        return()
+
+    # Get the ownership from file 2 since we'll need to add this
+    # back to the symlink we create
+    uid = path1.stat().st_uid
+    gid = path1.stat().st_gid
+
+    if not options.quiet:
+        print("Replacing")
+        print(file1)
+        print("with")
+        print(file2)
+        print("")
+
+    if not options.dryrun:
+        path1.unlink()
+        path1.symlink_to(path2)
+        os.lchown(path1,uid, gid)
+
+
+def getOptions():
+
+    parser = argparse.ArgumentParser(description="Convert duplicate files to symlinks")
+
+    parser.add_argument("--quiet", action="store_true", default=False, help="Suppress all progress messages")
+    parser.add_argument("--dryrun",action="store_true", default=False, help="Report on actions but don't do anything")
+    parser.add_argument("--version", action="version", version=f"dedup2symlink v{VERSION} https://github.com/s-andrews/symlink2text")
+    parser.add_argument("--prefer2", action="store_true", default=False, help="Keep file2 as a real file and make file1 a symlink")
+    parser.add_argument("dedupfile", type=str, help="The dedupcheck file to use")
+
+    options = parser.parse_args()
+
+    return options
+
+if __name__ == "__main__":
+    main()
